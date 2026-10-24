@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="bs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JO40 Kviz – Doktor medicine</title>
+<style>
+:root{
+  --bg:#f6f5f1; --card:#fff; --ink:#1d2327; --muted:#69737a; --line:#e2e0d9;
+  --accent:#0f6b5c; --accent-ink:#fff; --ok:#16794a; --ok-bg:#e3f4ea; --bad:#b3261e; --bad-bg:#fbe7e5; --warn-bg:#fff4d6; --warn:#7a5a00;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#14181a; --card:#1d2326; --ink:#e8ecee; --muted:#95a1a8; --line:#2d363a; --accent:#3fb59f; --accent-ink:#06201b; --ok:#5fd394; --ok-bg:#173326; --bad:#ff8a80; --bad-bg:#3a1c1a; --warn-bg:#3a3010; --warn:#f0cf6a;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.4rem;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px;font-size:.92rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.card h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:.88rem;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip small{opacity:.7;margin-left:4px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button.primary{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,.opt:focus-visible,.chip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.bar>div{height:100%;background:var(--accent);transition:width .25s}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;margin-bottom:14px;gap:8px}
+.tag{display:inline-block;font-size:.75rem;background:var(--line);padding:2px 8px;border-radius:6px;margin-right:6px}
+.q{font-size:1.15rem;font-weight:600;margin:6px 0 16px}
+.opt{display:flex;gap:10px;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font:inherit;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .k{flex:none;width:22px;height:22px;border-radius:6px;background:var(--line);font-size:.78rem;display:grid;place-items:center;color:var(--muted)}
+.opt.ok{background:var(--ok-bg);border-color:var(--ok)}
+.opt.bad{background:var(--bad-bg);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.expl{margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:.95rem}
+.warn{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn);font-size:.85rem}
+.big{font-size:2.6rem;font-weight:700;margin:0}
+.rev{border-top:1px solid var(--line);padding:10px 0;font-size:.93rem}
+.rev b{display:block}
+.rev .a{color:var(--ok)} .rev .w{color:var(--bad)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}
+.stats div{background:var(--bg);border-radius:10px;padding:10px}
+.stats b{display:block;font-size:1.3rem}
+.stats span{font-size:.78rem;color:var(--muted)}
+.flash{min-height:140px;cursor:pointer}
+.star{background:none;border:0;font-size:1.3rem;cursor:pointer;color:var(--muted);padding:0}
+.star.on{color:#e0a800}
+select{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+label.sw{display:inline-flex;align-items:center;gap:6px;font-size:.92rem;margin-right:14px}
+.hint{color:var(--muted);font-size:.8rem;margin-top:12px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+/* [kategorija, pitanje, [tačan, pogrešni...], objašnjenje, original(1)/prošireno(0), upozorenje(1 = provjeriti u aktu)] */
+const Q = [
+// ===== KARDIOLOGIJA =====
+["Kardiologija","Akutni koronarni sindrom obuhvata:",["Nestabilnu anginu pektoris, NSTEMI i STEMI","Stabilnu anginu pektoris, NSTEMI i STEMI","Nestabilnu anginu, perikarditis i STEMI","Samo NSTEMI i STEMI"],"Stabilna angina NIJE AKS. Nestabilna angina = ishemija bez porasta troponina.",1],
+["Kardiologija","Koji marker je najspecifičniji za nekrozu miokarda?",["Srčani troponin (hs-cTn)","CK-MB","Mioglobin","LDH"],"Troponin I/T je zlatni standard; mioglobin je rani ali nespecifičan.",0],
+["Kardiologija","Prvi lijek koji se daje pri sumnji na AKS (ako nema kontraindikacije)?",["Acetilsalicilna kiselina (aspirin) 150–300 mg žvakanjem","Metoprolol i.v.","Furosemid i.v.","Heparin per os"],"Aspirin + P2Y12 inhibitor (dvojna antiagregacija) je osnova.",0],
+["Kardiologija","ST elevacija u odvodima II, III i aVF upućuje na infarkt:",["Inferiornog zida (najčešće RCA)","Anteroseptalnog zida (LAD)","Lateralnog zida (LCx)","Posteriornog zida isključivo"],"Anteriorni: V1–V4; lateralni: I, aVL, V5–V6; inferiorni: II, III, aVF.",0],
+["Kardiologija","Vaughan-Williamsova klasifikacija dijeli antiaritmike prema:",["Mehanizmu djelovanja u 4 klase","Brzini nastupa djelovanja","Hemijskoj strukturi","Načinu eliminacije"],"I – Na⁺ kanali (Ia, Ib, Ic); II – beta-blokatori; III – K⁺ kanali; IV – Ca²⁺ kanali.",1],
+["Kardiologija","Vaughan-Williams klasa III obuhvata:",["Blokatore K⁺ kanala (amiodaron, sotalol)","Blokatore Na⁺ kanala","Beta-blokatore","Nedihidropiridinske blokatore Ca²⁺ kanala"],"Produžavaju repolarizaciju (produžen QT).",1],
+["Kardiologija","Vaughan-Williams klasa IV obuhvata:",["Verapamil i diltiazem","Amiodaron i sotalol","Lidokain i fenitoin","Propranolol i metoprolol"],"Nedihidropiridinski Ca-blokatori usporavaju AV provođenje.",1],
+["Kardiologija","Koja je kontraindikacija za beta-blokatore?",["AV blok II–III stepena bez pejsmejkera","Stabilna angina pektoris","Postinfarktno stanje","Esencijalni tremor"],"Ostale: teška bradikardija, kardiogeni šok, akutna dekompenzirana HF, teška astma, sindrom bolesnog sinusa.",1],
+["Kardiologija","Tipičan EKG nalaz kod akutnog perikarditisa:",["Difuzna konkavna ST elevacija uz PR depresiju","Lokalizovana konveksna ST elevacija s recipročnom depresijom","Patološki Q zupci u prekordijalnim odvodima","Inverzija T talasa samo u V1–V3"],"Nema recipročnih promjena (izuzev aVR i V1), nema patoloških Q zubaca.",1],
+["Kardiologija","EKG znaci: ishemija – lezija – nekroza redom su:",["Inverzija T – ST promjena – patološki Q zubac","Patološki Q – ST elevacija – inverzija T","ST elevacija – inverzija T – široki QRS","Visok T – PR depresija – Q zubac"],"Ishemija → T; lezija → ST elevacija (transmuralna) ili depresija (subendokardna); nekroza → patološki Q.",1],
+["Kardiologija","Klasičan (iako rijedak) EKG obrazac kod plućne tromboembolije:",["S1Q3T3","Delta talas","Osborn J talas","Pilasti F talasi"],"Najčešći nalaz je sinusna tahikardija; mogući i novi RBBB, T inverzija V1–V4, P pulmonale.",1],
+["Kardiologija","Mehanizam djelovanja digoksina:",["Inhibicija Na⁺/K⁺-ATPaze → više intracelularnog Ca²⁺ → pozitivan inotropni učinak","Blokada beta-1 receptora","Blokada Ca²⁺ kanala L-tipa","Inhibicija ACE"],"Usporava AV provođenje (negativan dromotropni). Uzak terapijski indeks.",1],
+["Kardiologija","Koji faktor pojačava toksičnost digoksina?",["Hipokalemija","Hiperkalemija","Hipernatremija","Hipokalcemija"],"Hipokalemija, hipomagnezemija i hiperkalcemija povećavaju toksičnost. Antidot: digoksin-specifični Fab fragmenti.",0],
+["Kardiologija","Osnovna razlika ACE-inhibitora i beta-blokatora:",["ACE-i blokiraju RAAS (angiotenzin I → II), BB blokiraju simpatičke beta-receptore","ACE-i smanjuju frekvenciju, BB šire krvne sudove","Oba djeluju isključivo na bubreg","ACE-i blokiraju Ca²⁺ kanale, BB Na⁺ kanale"],"ACE-i smanjuju afterload i preload; BB smanjuju frekvenciju, kontraktilnost i potrošnju O₂.",1],
+["Kardiologija","Atrijalni flutter na EKG-u karakteriše:",["Pravilni „pilasti“ F-talasi (najbolje u II, III, aVF), frekvencija oko 300/min","Potpuno nepravilan ritam bez P talasa","Široki QRS s delta talasom","Progresivno produženje PR intervala"],"Najčešće AV provođenje 2:1 (ventrikularna frekvencija ~150).",1],
+["Kardiologija","Definitivno liječenje tipičnog atrijalnog flutera:",["Kateterska ablacija kavotrikuspidalnog istmusa","Doživotni digoksin","Implantacija ICD-a","Hirurška valvuloplastika"],"Uz kontrolu frekvencije/ritma i antikoagulaciju prema CHA₂DS₂-VASc.",1],
+["Kardiologija","Skor za procjenu rizika tromboembolije kod atrijalne fibrilacije:",["CHA₂DS₂-VASc","CURB-65","Wells","GRACE"],"CURB-65 – pneumonija; Wells – PE/DVT; GRACE – AKS.",0],
+["Kardiologija","Gubitak R-progresije u V1–V3 najviše upućuje na:",["Raniji anteroseptalni infarkt miokarda","Akutni perikarditis","Hipertireozu","Blok desne grane"],"Rjeđe: hipertrofija LV, HOBP.",1],
+["Kardiologija","Koja je MEHANIČKA komplikacija infarkta miokarda?",["Ruptura papilarnog mišića","Ventrikularna fibrilacija","Atrijalna fibrilacija","AV blok III stepena"],"Mehaničke: ruptura papilarnog mišića, VSD, ruptura slobodnog zida (tamponada), aneurizma. Aritmije su električne komplikacije.",1],
+["Kardiologija","Simptom koji NAJVIŠE upućuje na srčanu insuficijenciju:",["Ortopneja i paroksizmalna noćna dispneja","Bol u grudima na inspiriju","Hemoptiza","Krepitacije u zglobovima"],"Uz dispneju u naporu, distendirane jugularne vene, periferne edeme i S3 galop.",1],
+["Kardiologija","Prvi korak u liječenju teške hiperkalemije s EKG promjenama:",["Intravenski kalcijum glukonat","Inzulin + glukoza","Salbutamol inhalacije","Peroralni kalijum-vezujući kationski izmjenjivač"],"Kalcijum stabilizuje membranu miokarda; zatim inzulin+glukoza, beta-2 agonisti, eliminacija K⁺.",1],
+["Kardiologija","Produžen, teški bol u grudima – koje stanje prioritetno isključiti?",["AKS, disekciju aorte i plućnu emboliju","Gastroezofagealni refluks, kostohondritis i herpes zoster","Perikarditis, pneumotoraks i pleuritis","Anksiozni poremećaj i miozitis"],"Životno ugrožavajući uzroci prvo.",1],
+["Kardiologija","„Četiri stuba“ terapije HFrEF-a su:",["ACE-i/ARB/ARNI, beta-blokator, MRA, SGLT2-inhibitor","Digoksin, amlodipin, furosemid, nitrati","ACE-i, statin, aspirin, varfarin","Beta-blokator, verapamil, MRA, tiazid"],"Diuretici se daju za simptomatsko rasterećenje, ali nisu „stub“ prognoze.",1],
+["Kardiologija","Hipovolemijski šok nastaje zbog:",["Smanjenja intravaskularnog volumena → manji venski priliv i minutni volumen","Otkazivanja pumpne funkcije srca","Generalizirane vazodilatacije","Opstrukcije velikih krvnih sudova"],"Kardiogeni – pumpa; distributivni – vazodilatacija; opstruktivni – PE/tamponada.",1],
+["Kardiologija","Terapija izbora kod Torsades de pointes:",["Magnezijum sulfat i.v.","Amiodaron i.v.","Sotalol","Verapamil i.v."],"Amiodaron i sotalol produžuju QT pa su kontraindikovani.",0],
+["Kardiologija","Disekciju aorte tipično prati:",["Naglo nastao „kidajući“ bol koji se širi u leđa","Bol koji popušta na nitrate za 5 min","Bol koji se pojačava pri udisaju i popušta u nagnutom sjedećem položaju","Bol vezan uz obrok"],"Dijagnostika: CT angiografija; antikoagulacija/trombolitici su kontraindikovani.",0],
+
+// ===== PULMOLOGIJA =====
+["Pulmologija","Čest uzročnik atipične pneumonije kod školske djece:",["Mycoplasma pneumoniae","Streptococcus pneumoniae","Staphylococcus aureus","Klebsiella pneumoniae"],"Blag klinički tok, suh kašalj; terapija makrolid/doksiciklin.",1],
+["Pulmologija","Najčešći uzročnik vanbolničke pneumonije:",["Streptococcus pneumoniae","Mycoplasma pneumoniae","Legionella pneumophila","Pseudomonas aeruginosa"],"",0],
+["Pulmologija","Difuzni pleuritični bol + tahikardija + dispneja + tahipneja + hemoptiza najviše upućuje na:",["Plućnu tromboemboliju","Spontani pneumotoraks","Akutni bronhitis","Perikarditis"],"Dijagnostika: Wells/D-dimer → CT pulmonalna angiografija.",1],
+["Pulmologija","Deficit alfa-1-antitripsina povezan je sa:",["Ranim panlobularnim emfizemom i cirozom jetre","Bronhijalnom astmom i pankreatitisom","Plućnom fibrozom i nefrolitijazom","Cističnom fibrozom i hemolizom"],"Nekontrolisana aktivnost elastaze u plućima; nakupljanje abnormalnog proteina u hepatocitima.",1],
+["Pulmologija","Batičasti prsti (clubbing) NISU tipični za:",["Bronhijalnu astmu","Bronhogeni karcinom","Bronhiektazije","Cijanotične urođene srčane mane"],"Još: plućna fibroza, infektivni endokarditis, IBD, ciroza.",1],
+["Pulmologija","Najosjetljivija slikovna metoda za procjenu maksilarnog sinusitisa:",["CT paranazalnih sinusa","Nativni RTG sinusa","Ultrazvuk sinusa","Scintigrafija"],"",1],
+["Pulmologija","Globalna (respiratorna insuficijencija tip II) znači:",["Hipoksemija + hiperkapnija","Hipoksemija uz normalan/snižen PaCO₂","Izolovana hiperkapnija uz normalan PaO₂","Respiratorna alkaloza"],"PaO₂ < 60 mmHg i PaCO₂ > 45–50 mmHg; uzrok je alveolarna hipoventilacija.",1],
+["Pulmologija","Spirometrijski kriterij za KOPB:",["Postbronhodilatatorni FEV₁/FVC < 0,70","FEV₁/FVC > 0,90","Smanjen TLC uz normalan FEV₁/FVC","Povećan FEV₁ za > 12% nakon bronhodilatatora"],"Rastuća reverzibilnost nakon bronhodilatatora govori više u prilog astmi.",0],
+["Pulmologija","Terapija prvog izbora za dugoročnu kontrolu perzistentne astme:",["Inhalacijski kortikosteroid","Peroralni teofilin","Kratkodjelujući beta-2 agonist redovno","Antihistaminik"],"SABA samo za simptomatsko olakšanje.",0],
+
+// ===== INFEKTOLOGIJA =====
+["Infektologija","Uzročnik nesupurativnih komplikacija (akutni glomerulonefritis, reumatska groznica):",["Streptococcus pyogenes (grupa A)","Streptococcus agalactiae (grupa B)","Staphylococcus aureus","Enterococcus faecalis"],"Posljedica imunološke reakcije nakon streptokokne infekcije.",1],
+["Infektologija","Najčešći uzročnik ranog neonatalnog sepsisa i meningitisa:",["Streptococcus agalactiae (GBS)","Streptococcus pyogenes","Neisseria meningitidis","Haemophilus influenzae tip b"],"Prevencija: skrining trudnica i intrapartalna profilaksa penicilinom.",1],
+["Infektologija","Akutna bakterijska infekcija srednjeg uha s otalgijom, upalom bubne opne i izlivom:",["Akutni otitis media","Otitis externa","Mastoiditis","Kolesteatom"],"Najčešći uzročnici: S. pneumoniae, H. influenzae, M. catarrhalis.",1],
+["Infektologija","Erythema migrans je znak:",["Rane lokalizirane lajmske borelioze (Borrelia burgdorferi)","Sekundarnog sifilisa","Rikecioze","Reumatske groznice"],"Prenosi ga krpelj; terapija: doksiciklin (ili amoksicilin kod djece/trudnica).",1],
+["Infektologija","Najčešći uzročnik herpes labialisa:",["HSV-1","HSV-2","VZV","EBV"],"",1],
+["Infektologija","Koja osipna bolest NIJE virusne etiologije?",["Šarlah","Morbili","Rubeola","Varičela"],"Uzročnik šarlaha je S. pyogenes (terapija penicilin V).",1],
+["Infektologija","MPR vakcina u kalendaru imunizacije u FBiH daje se:",["S navršenih 12 mjeseci","U 2. mjesecu života","U 6. mjesecu života","S 5 godina"],"",1],
+["Infektologija","Koplikove mrlje patognomonične su za:",["Morbile","Rubeolu","Šarlah","Varičelu"],"",0],
+["Infektologija","Petehijalni osip uz meningealni sindrom i groznicu najviše upućuje na:",["Neisseria meningitidis","Streptococcus pyogenes","Mycoplasma pneumoniae","Herpes simplex virus"],"Hitnost: odmah antibiotik (ceftriakson), ne čekati lumbalnu punkciju.",0],
+["Infektologija","Reaktivacija VZV-a u dorzalnom gangliju daje:",["Herpes zoster","Herpes labialis","Mononukleozu","Erythema infectiosum"],"",0],
+
+// ===== HEMATOLOGIJA =====
+["Hematologija","Nedostatak folne kiseline uzrokuje:",["Megaloblastnu anemiju","Mikrocitnu hipohromnu anemiju","Aplastičnu anemiju","Hemolitičku anemiju"],"",1],
+["Hematologija","Nedostatak kojih vitamina uzrokuje megaloblastnu anemiju?",["Vitamin B12 i/ili folna kiselina","Vitamin C i K","Vitamin A i D","Vitamin B1 i B6"],"Perniciozna anemija: autoantitijela na intrinzički faktor/parijetalne stanice.",1],
+["Hematologija","Klasična trijada hemolitičko-uremijskog sindroma:",["Mikroangiopatska hemolitička anemija, trombocitopenija, akutna bubrežna insuficijencija","Anemija, leukopenija, hepatomegalija","Groznica, artritis, osip","Hematurija, hipertenzija, edemi"],"Najčešće nakon infekcije E. coli O157:H7 (Shiga toksin).",1],
+["Hematologija","Fiziološka hemostaza se od patološke tromboze razlikuje po tome što je hemostaza:",["Lokalizirana, regulirana i samoograničavajuća","Sistemska i neregulirana","Uvijek intravaskularna u neoštećenom sudu","Uzrok ishemije"],"Tromboza opstruira protok krvi unutar suda.",1],
+["Hematologija","Terapija prvog izbora kod sideropenične anemije:",["Peroralni preparati željeza","Transfuzija eritrocita","Vitamin B12 i.m.","Eritropoetin"],"Parenteralno željezo kod netolerancije, malapsorpcije ili neodgovora.",1],
+["Hematologija","Laboratorijski nalaz kod sideropenične anemije:",["Nizak feritin, nizak MCV","Visok feritin, visok MCV","Nizak feritin, visok MCV","Normalan feritin, nizak TIBC uz hemolizu"],"TIBC je povišen.",0],
+["Hematologija","Koagulogram kod von Willebrandove bolesti:",["Produžen aPTT i produženo vrijeme krvarenja","Produžen PT/INR i normalan aPTT","Sniženi broj trombocita i produžen PT","Sve vrijednosti uredne bez izuzetka"],"aPTT je produžen zbog sekundarno sniženog FVIII.",1],
+["Hematologija","Šta NIJE poremećeno kod von Willebrandove bolesti?",["Broj trombocita i PT/INR","aPTT","Funkcija trombocita (adhezija)","Faktor VIII (sekundarno)"],"Kvalitativni, a ne kvantitativni poremećaj; PT i broj trombocita su normalni.",1],
+["Hematologija","Hemofilija A je nedostatak:",["Faktora VIII","Faktora IX","Faktora XI","von Willebrandovog faktora"],"Produžen aPTT, normalan PT i broj trombocita. Hemofilija B = FIX.",0],
+["Hematologija","Varfarin se prati putem:",["INR/PT","aPTT","Anti-Xa uvijek","Broja trombocita"],"Nefrakcionirani heparin prati se aPTT-om.",0],
+["Hematologija","Ključna pretraga za potvrdu multiplog mijeloma:",["Aspiracija/biopsija koštane srži (≥10% klonalnih plazma stanica)","Samo RTG skeleta","Samo broj leukocita","Biopsija limfnog čvora"],"Uz elektroforezu/imunofiksaciju seruma i urina (M-komponenta).",1],
+["Hematologija","CRAB kriteriji multiplog mijeloma uključuju:",["Hiperkalcemiju, bubrežnu insuficijenciju, anemiju, koštane lezije","Hipokalcemiju, hipertenziju, artritis, bradikardiju","Leukocitozu, hepatomegaliju, splenomegaliju, limfadenopatiju","Hiperurikemiju, ascites, hipoalbuminemiju, edeme"],"",0],
+["Hematologija","Reed-Sternbergove stanice karakteristične su za:",["Hodgkinov limfom","Multipli mijelom","Kroničnu mijeloičnu leukemiju","Burkittov limfom"],"",0],
+
+// ===== REUMATOLOGIJA =====
+["Reumatologija","Bouchardovi čvorići nalaze se na:",["Proksimalnim interfalangealnim (PIP) zglobovima","Distalnim interfalangealnim (DIP) zglobovima","Metakarpofalangealnim zglobovima","Zglobu ručja"],"Karakteristični za osteoartritis.",1],
+["Reumatologija","Heberdenovi čvorići nalaze se na:",["Distalnim interfalangealnim (DIP) zglobovima","Proksimalnim interfalangealnim (PIP) zglobovima","Zglobovima stopala","Zglobu lakta"],"Oba su karakteristična za osteoartritis: Heberden = DIP, Bouchard = PIP.",1],
+["Reumatologija","Za potvrdu ranog ankilozirajućeg spondilitisa/aksijalnog spondiloartritisa najosjetljivija je:",["MRI sakroilijakalnih zglobova","Nativni RTG sakroilijakalnih zglobova","Scintigrafija kostiju","UZ kuka"],"HLA-B27 je pomoćni; RTG pokazuje promjene kasno.",1],
+["Reumatologija","Giht je posljedica povišene koncentracije:",["Mokraćne kiseline (urata)","Kalcijum pirofosfata","Kreatinina","Fosfata"],"Kristali monosodijum urata – negativno dvolomni pod polarizirajućim mikroskopom.",1],
+["Reumatologija","Akutni napad gihta liječi se prvenstveno:",["NSAIL, kolhicinom ili kortikosteroidima","Alopurinolom","Febuksostatom","Probenecidom"],"Alopurinol se ne uvodi tokom akutnog napada; služi za dugoročno snižavanje urata.",0],
+["Reumatologija","Koji zglobovi su tipično poštedjeni kod reumatoidnog artritisa?",["DIP zglobovi šake","MCP zglobovi","PIP zglobovi","Zglobovi ručja"],"Serologija: RF i anti-CCP.",0],
+
+// ===== GASTROENTEROLOGIJA / ONKOLOGIJA =====
+["Gastroenterologija","Definitivna dijagnoza karcinoma želuca postavlja se:",["EGDS-om s biopsijom i histopatologijom","Nativnim RTG-om abdomena","Ultrazvukom abdomena","Određivanjem CEA"],"",1],
+["Gastroenterologija","Hematohezija je:",["Svježa jarkocrvena krv u stolici (obično donje GI krvarenje)","Crna katranasta stolica","Krv u povraćenom sadržaju","Okultno krvarenje dokazano testom"],"",1],
+["Gastroenterologija","Melena najčešće upućuje na krvarenje iz:",["Gornjeg dijela GI trakta","Rektuma","Sigmoidnog kolona","Analnog kanala"],"",0],
+["Gastroenterologija","Serološki test za celijakiju:",["Anti-tTG IgA","ANCA","AMA","Anti-dsDNA"],"",0],
+
+// ===== ENDOKRINOLOGIJA =====
+["Endokrinologija","Akutne hiperglikemijske komplikacije dijabetesa su:",["Dijabetička ketoacidoza i hiperosmolarno hiperglikemijsko stanje","Retinopatija i nefropatija","Polineuropatija i dijabetičko stopalo","Makroangiopatija i infarkt"],"Hipoglikemija je akutna komplikacija terapije.",1],
+["Endokrinologija","Prvi korak u liječenju DKA je:",["Intravenska nadoknada tekućine (fiziološki rastvor)","Bolus inzulina bez nadoknade tekućine","Natrij-bikarbonat rutinski","Peroralni metformin"],"Inzulin se uvodi nakon provjere kalijuma (K⁺ ≥ 3,3 mmol/L).",0],
+["Endokrinologija","Hipoglikemija nivoa 2 (klinički značajna) je glukoza:",["< 3,0 mmol/L (< 54 mg/dL)","< 3,9 mmol/L, ≥ 3,0 mmol/L","< 5,0 mmol/L","< 2,0 mmol/L"],"Nivo 1: < 3,9 i ≥ 3,0; nivo 3: teška, zahtijeva pomoć druge osobe. Glukagon za osobe na inzulinu s povećanim rizikom.",1],
+["Endokrinologija","Laboratorijski nalaz kod primarne hipotireoze:",["Povišen TSH, snižen fT4","Snižen TSH, povišen fT4","Povišen TSH, povišen fT4","Snižen TSH, snižen fT4"],"Snižen TSH + visok fT4 = primarna hipertireoza.",1],
+["Endokrinologija","Prva linija farmakoterapije dijabetesa tipa 2:",["Metformin","Sulfonilureja","Pioglitazon","Inzulin glargin"],"Uz SGLT2i/GLP-1 RA kod kardiovaskularne bolesti, HF ili CKD.",0],
+["Endokrinologija","Antitijela specifična za Gravesovu bolest:",["TRAb (antitijela na TSH receptor)","Anti-TPO isključivo","Anti-tTG","ANA"],"",0],
+
+// ===== NEUROLOGIJA / PSIHIJATRIJA =====
+["Neurologija","Bol u donjem dijelu leđa koji se širi duž ekstremiteta s neurološkim deficitom:",["Lumbalna radikulopatija (hernija diska)","Nespecifični lumbalgični sindrom","Sakroiliitis","Trohanterični bursitis"],"",1],
+["Neurologija","Glasgow Coma Scale procjenjuje:",["Nivo svijesti: očni, verbalni i motorni odgovor (3–15)","Samo reakciju zjenica","Dubinu respiracije","Stepen paralize"],"Najniži zbir je 3, najviši 15.",1],
+["Neurologija","Ključna neurofiziološka metoda kod sumnje na epilepsiju:",["Elektroencefalografija (EEG)","Elektromiografija (EMG)","Evocirani potencijali","Elektrokardiografija"],"",1],
+["Neurologija","Bellov fenomen je:",["Elevacija i rotacija bulbusa prema gore pri pokušaju zatvaranja oka (periferna pareza n. facialisa)","Dvostruke slike pri pogledu u stranu","Nistagmus pri pogledu u stranu","Anizokorija"],"",1],
+["Neurologija","Kod periferne (Bellove) pareze n. facialisa, za razliku od centralne:",["Zahvaćena je i gornja polovina lica (čelo)","Čelo je pošteđeno","Nema poremećaja zatvaranja oka","Zahvaćena je samo donja polovina lica"],"Terapija: kortikosteroidi (prednizolon) rano, zaštita oka.",0],
+["Neurologija","Prvi dijagnostički korak kod akutnog moždanog udara:",["CT mozga bez kontrasta","MR angiografija nakon 48 sati","Lumbalna punkcija","EEG"],"Razlikuje ishemijski od hemoragijskog udara prije trombolize.",0],
+["Psihijatrija","Hronična bolest najjače povezana s depresijom kod starijih (među ponuđenima):",["Moždani udar","Akutna upala grla","Alergijski rinitis","Fizička povreda bez posljedica"],"Slično: srčana insuficijencija, dijabetes, CKD, Parkinsonova bolest.",1],
+
+// ===== GINEKOLOGIJA / ORL =====
+["Ginekologija","Endometrioza je:",["Prisustvo funkcionalnog endometrijalnog tkiva izvan materišne šupljine","Hiperplazija endometrija","Benigni tumor miometrija","Upala endometrija"],"Hronična pelvična bol, dismenoreja, dispareunija, neplodnost.",1],
+["Ginekologija","Ektopičnu trudnoću potvrđuje:",["β-hCG uz transvaginalni UZ","Samo pregled spekulumima","RTG male karlice","CA-125"],"Klasika: amenoreja, bol u donjem abdomenu, vaginalno krvarenje.",0],
+["ORL","Epistaksa najčešće potiče iz:",["Kiesselbachovog pleksusa na prednjem septumu","Zadnjeg dijela nosne šupljine (Woodruffov pleksus)","Frontalnog sinusa","Nazofarinksa"],"Prednja epistaksa je češća; prvo kompresija nosnih krila 10–15 min.",1],
+
+// ===== JAVNO ZDRAVSTVO =====
+["Javno zdravstvo","Hronične nezarazne bolesti (NCD) su:",["Bolesti dugog trajanja koje se ne prenose s osobe na osobu","Zarazne bolesti dugog trajanja","Akutne bolesti bez posljedica","Samo nasljedne bolesti"],"Četiri glavne grupe: kardiovaskularne, maligne, hronične respiratorne bolesti i dijabetes.",1],
+["Javno zdravstvo","Koja grupa NCD čini najveći udio smrti u svijetu?",["Kardiovaskularne bolesti","Malignomi","Hronične respiratorne bolesti","Dijabetes"],"",1],
+["Javno zdravstvo","Skrining je primjer:",["Sekundarne prevencije","Primarne prevencije","Tercijarne prevencije","Kvartarne prevencije"],"Primarna: vakcinacija; sekundarna: rano otkrivanje; tercijarna: rehabilitacija.",0],
+["Javno zdravstvo","Porodična medicina se pruža na:",["Primarnom nivou zdravstvene zaštite","Sekundarnom nivou","Tercijarnom nivou","Samo u bolnicama"],"",1],
+["Javno zdravstvo","Izabrani doktor upućuje osiguranika na prvostepenu ljekarsku komisiju nakon:",["30 dana privremene spriječenosti za rad","15 dana","42 dana","90 dana"],"Prema Pravilniku o postupku i kriterijima za utvrđivanje privremene spriječenosti za rad (Sl. novine FBiH 3/17).",1],
+
+// ===== JU DOM ZDRAVLJA KS =====
+["JU DZ KS","Misija JU Dom zdravlja KS je promocija:",["Efektivnih, pravednih, pristupačnih, integrisanih i troškovno efikasnih zdravstvenih programa i usluga","Isključivo hitne medicinske pomoći","Samo specijalističkih usluga","Komercijalnih zdravstvenih usluga"],"Sinergija primarne i specijalističko-konsultativne zaštite, izvrsnost, razvoj uposlenika i timski duh.",1,1],
+["JU DZ KS","Primarnom nivou zdravstvene zaštite pripadaju službe:",["Porodične medicine, zaštite žena, zaštite djece, patronažna, hitna pomoć, stomatološka","Samo bolnički odjeli","Klinički centri","Samo apoteke"],"",1,1],
+["JU DZ KS","Specijalističko-konsultativna zaštita se pruža:",["U specijalističkim ambulantama, na uputnicu izabranog doktora","Isključivo u kliničkim centrima","Samo u privatnim ordinacijama","Bez uputnice u svim slučajevima"],"",1,1],
+["JU DZ KS","Organ upravljanja u JU Dom zdravlja KS je:",["Upravni odbor","Nadzorni odbor","Skupština zaposlenih","Stručno vijeće"],"",1,1],
+["JU DZ KS","Ustanovom rukovodi:",["Direktor (generalni direktor)","Predsjednik Upravnog odbora","Glavna sestra","Ministar zdravstva"],"",1,1],
+["JU DZ KS","Profesionalna tajna prema Statutu obuhvata:",["Sve podatke o zdravstvenom stanju pacijenta i druge podatke saznate pri obavljanju profesije","Samo dijagnozu","Samo plate zaposlenih","Samo podatke o lijekovima"],"",1,1],
+["JU DZ KS","Osnovna medicinska dokumentacija je:",["Zdravstveni karton pacijenta s nalazima, uputnicama i izvještajima","Samo recept","Samo račun za pregled","Samo osiguranička kartica"],"Prema Zakonu o evidencijama u oblasti zdravstva.",1,1],
+["JU DZ KS","Zakon o pravima, obavezama i odgovornostima pacijenata uređuje:",["Prava pacijenata te njihove obaveze i odgovornosti","Samo cijene usluga","Samo radno vrijeme ustanova","Samo licenciranje ljekara"],"Npr. pravo na informisanost, pristanak, povjerljivost, uvid u dokumentaciju.",1,1],
+["JU DZ KS","Principi na kojima se bazira korištenje zdravstvene zaštite:",["Solidarnost, jednakost/pravednost, sveobuhvatnost, kontinuitet i dostupnost","Profit, konkurencija i privatizacija","Isključivo plaćanje iz džepa","Hijerarhija i selekcija pacijenata"],"",1,1],
+["JU DZ KS","Puno sedmično radno vrijeme radnika:",["40 sati","36 sati","42 sata","48 sati"],"U skladu sa Zakonom o radu FBiH.",1,1],
+];
+
+/* ---------- stanje ---------- */
+const KEY="jo40-kviz-v1";
+let store;
+try{store=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){store={}}
+store.stats=store.stats||{}; store.stars=store.stars||{};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}};
+const cats=[...new Set(Q.map(x=>x[0]))];
+const $=s=>document.querySelector(s);
+const app=$("#app");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+let cfg={cats:new Set(cats),filter:"all",count:20,mode:"quiz",shuf:true};
+let run=null;
+
+function stat(q){return store.stats[q[1]]||{r:0,w:0,last:null}}
+
+/* ---------- početna ---------- */
+function home(){
+  const seen=Q.filter(q=>stat(q).r+stat(q).w>0).length;
+  const right=Object.values(store.stats).reduce((s,x)=>s+x.r,0), wrong=Object.values(store.stats).reduce((s,x)=>s+x.w,0);
+  const acc=right+wrong?Math.round(100*right/(right+wrong)):0;
+  const pool=getPool();
+  app.innerHTML=`
+  <h1>JO40 – Doktor medicine</h1>
+  <p class="sub">Vježba za JU Dom zdravlja Kantona Sarajevo · ${Q.length} pitanja</p>
+  <div class="card"><div class="stats">
+    <div><b>${seen}/${Q.length}</b><span>viđeno</span></div>
+    <div><b>${acc}%</b><span>ukupna tačnost</span></div>
+    <div><b>${Q.filter(q=>stat(q).last===0).length}</b><span>trenutno pogrešno</span></div>
+  </div></div>
+  <div class="card"><h2>Oblasti</h2><div class="chips" id="cats"></div>
+    <div class="row" style="margin-top:10px"><button class="ghost" id="all">Sve</button><button class="ghost" id="none">Nijedna</button></div></div>
+  <div class="card"><h2>Postavke</h2>
+    <div class="row" style="margin-bottom:12px">
+      <label class="sw">Mod <select id="mode"><option value="quiz">Kviz (ponuđeni odgovori)</option><option value="flash">Kartice (prisjećanje)</option></select></label>
+      <label class="sw">Pitanja <select id="count"><option>10</option><option>20</option><option>40</option><option value="9999">Sva</option></select></label>
+    </div>
+    <div class="row" style="margin-bottom:12px"><label class="sw">Prikaži <select id="filter">
+      <option value="all">Sva pitanja</option><option value="orig">Samo originalna iz oglasa</option><option value="ext">Samo proširena</option>
+      <option value="wrong">Samo pogrešno odgovorena</option><option value="new">Samo neviđena</option><option value="star">Samo označena ★</option></select></label></div>
+    <label class="sw"><input type="checkbox" id="shuf"> Miješaj redoslijed odgovora</label>
+  </div>
+  <div class="row"><button class="primary" id="start">Počni (<span id="pc">${pool.length}</span>)</button>
+  <button class="ghost" id="reset">Resetuj napredak</button></div>
+  <p class="hint">Napredak se čuva u pregledniku. Tipke: 1–4 odabir odgovora, Enter/→ dalje.</p>`;
+  const cc=$("#cats");
+  cats.forEach(c=>{const n=Q.filter(q=>q[0]===c).length;const b=document.createElement("button");b.className="chip";b.setAttribute("aria-pressed",cfg.cats.has(c));b.innerHTML=esc(c)+`<small>${n}</small>`;
+    b.onclick=()=>{cfg.cats.has(c)?cfg.cats.delete(c):cfg.cats.add(c);b.setAttribute("aria-pressed",cfg.cats.has(c));upd()};cc.append(b)});
+  $("#all").onclick=()=>{cfg.cats=new Set(cats);home()};
+  $("#none").onclick=()=>{cfg.cats=new Set();home()};
+  ["mode","count","filter"].forEach(id=>{const e=$("#"+id);e.value=cfg[id];e.onchange=()=>{cfg[id]=id==="count"?+e.value:e.value;upd()}});
+  $("#shuf").checked=cfg.shuf;$("#shuf").onchange=e=>cfg.shuf=e.target.checked;
+  $("#start").onclick=()=>begin(getPool());
+  $("#reset").onclick=()=>{if(confirm("Obrisati sav napredak i oznake?")){store={stats:{},stars:{}};save();home()}};
+  function upd(){const n=getPool().length;$("#pc").textContent=n;$("#start").disabled=!n}
+  upd();
+}
+function getPool(){
+  return Q.filter(q=>{
+    if(!cfg.cats.has(q[0]))return false;
+    const s=stat(q);
+    switch(cfg.filter){
+      case "orig":return q[4]===1; case "ext":return q[4]===0;
+      case "wrong":return s.last===0; case "new":return s.r+s.w===0;
+      case "star":return store.stars[q[1]];
+    } return true;
+  });
+}
+
+/* ---------- tok ---------- */
+function begin(pool){
+  let items=shuffle(pool); if(cfg.count<items.length)items=items.slice(0,cfg.count);
+  run={items,i:0,score:0,wrong:[],answered:false};
+  cfg.mode==="flash"?flash():question();
+}
+function header(){
+  const pct=Math.round(100*run.i/run.items.length);
+  return `<div class="bar"><div style="width:${pct}%"></div></div>
+  <div class="meta"><span>${run.i+1} / ${run.items.length}</span><span>Tačno: ${run.score}</span><button class="ghost" id="quit" style="padding:2px 10px">Izađi</button></div>`;
+}
+function starBtn(q){return `<button class="star ${store.stars[q[1]]?"on":""}" id="star" title="Označi za kasnije" aria-label="Označi pitanje">${store.stars[q[1]]?"★":"☆"}</button>`}
+function bindCommon(q){
+  $("#quit").onclick=()=>{if(confirm("Prekinuti vježbu?"))home()};
+  $("#star").onclick=e=>{store.stars[q[1]]=!store.stars[q[1]];if(!store.stars[q[1]])delete store.stars[q[1]];save();e.target.classList.toggle("on");e.target.textContent=store.stars[q[1]]?"★":"☆"};
+}
+function record(q,ok){
+  const s=stat(q);ok?s.r++:s.w++;s.last=ok?1:0;store.stats[q[1]]=s;save();
+  if(ok)run.score++;else run.wrong.push(q);
+}
+
+function question(){
+  const q=run.items[run.i];
+  const opts=q[2].map((t,k)=>({t,ok:k===0}));
+  const list=cfg.shuf?shuffle(opts):opts;
+  run.answered=false;
+  app.innerHTML=header()+`<div class="card">
+    <div class="row" style="justify-content:space-between"><span class="tag">${esc(q[0])}${q[4]?"":" · prošireno"}</span>${starBtn(q)}</div>
+    <div class="q">${esc(q[1])}</div>
+    <div id="opts">${list.map((o,k)=>`<button class="opt" data-ok="${o.ok}"><span class="k">${k+1}</span><span>${esc(o.t)}</span></button>`).join("")}</div>
+    <div id="fb"></div></div>
+    <div class="row"><button class="primary" id="next" disabled>${run.i+1===run.items.length?"Rezultat":"Dalje"}</button></div>`;
+  bindCommon(q);
+  const btns=[...document.querySelectorAll(".opt")];
+  btns.forEach(b=>b.onclick=()=>answer(q,b,btns));
+  $("#next").onclick=next;
+}
+function answer(q,b,btns){
+  if(run.answered)return;run.answered=true;
+  const ok=b.dataset.ok==="true";
+  btns.forEach(x=>{x.disabled=true;if(x.dataset.ok==="true")x.classList.add("ok")});
+  if(!ok)b.classList.add("bad");
+  record(q,ok);
+  $("#fb").innerHTML=`<div class="expl"><b>${ok?"✔ Tačno":"✘ Netačno"}</b>${q[3]?"<br>"+esc(q[3]):""}</div>`+(q[5]?`<div class="warn">⚠ Institucionalno pitanje – odgovor provjeriti u važećem Statutu/Pravilniku.</div>`:"");
+  $("#next").disabled=false;$("#next").focus();
+}
+function flash(){
+  const q=run.items[run.i];run.answered=false;
+  app.innerHTML=header()+`<div class="card flash" id="fc">
+    <div class="row" style="justify-content:space-between"><span class="tag">${esc(q[0])}</span>${starBtn(q)}</div>
+    <div class="q">${esc(q[1])}</div><div id="fb" class="hint">Pokušaj odgovoriti naglas, pa klikni da otkriješ odgovor (Razmaknica).</div></div>
+    <div class="row" id="ctl"><button class="primary" id="rev">Otkrij odgovor</button></div>`;
+  bindCommon(q);
+  const reveal=()=>{
+    if(run.answered)return;run.answered=true;
+    $("#fb").innerHTML=`<div class="expl"><b>${esc(q[2][0])}</b>${q[3]?"<br>"+esc(q[3]):""}</div>`+(q[5]?`<div class="warn">⚠ Provjeriti u važećem aktu.</div>`:"");
+    $("#ctl").innerHTML=`<button class="primary" id="y">Znao/la sam</button><button class="ghost" id="n">Nisam znao/la</button>`;
+    $("#y").onclick=()=>{record(q,true);next()};$("#n").onclick=()=>{record(q,false);next()};
+  };
+  $("#rev").onclick=reveal;$("#fc").onclick=e=>{if(!e.target.closest("button"))reveal()};
+}
+function next(){run.i++;if(run.i>=run.items.length)return result();cfg.mode==="flash"?flash():question()}
+function result(){
+  const n=run.items.length,p=Math.round(100*run.score/n);
+  app.innerHTML=`<h1>Rezultat</h1><div class="card"><p class="big">${p}%</p><p>${run.score} od ${n} tačno</p></div>
+  <div class="row" style="margin-bottom:16px"><button class="primary" id="again" ${run.wrong.length?"":"disabled"}>Ponovi pogrešne (${run.wrong.length})</button><button class="ghost" id="home">Početna</button></div>
+  ${run.wrong.length?`<div class="card"><h2>Za ponoviti</h2>${run.wrong.map(q=>`<div class="rev"><b>${esc(q[1])}</b><span class="a">✔ ${esc(q[2][0])}</span>${q[3]?`<br><span style="color:var(--muted)">${esc(q[3])}</span>`:""}</div>`).join("")}</div>`:""}`;
+  $("#home").onclick=home;$("#again").onclick=()=>begin(run.wrong.slice());
+}
+
+document.addEventListener("keydown",e=>{
+  if(!run||!$("#opts")&&!$("#rev")&&!$("#y"))return;
+  if(e.target.tagName==="SELECT")return;
+  if(/^[1-9]$/.test(e.key)){const b=document.querySelectorAll(".opt")[+e.key-1];if(b&&!b.disabled)b.click()}
+  else if((e.key==="Enter"||e.key==="ArrowRight")&&$("#next")&&!$("#next").disabled&&e.target.id!=="next"){$("#next").click()}
+  else if(e.key===" "&&$("#rev")){e.preventDefault();$("#rev").click()}
+});
+home();
+</script>
+</body>
+</html>
